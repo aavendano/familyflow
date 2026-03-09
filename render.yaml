@@ -1,0 +1,70 @@
+services:
+  # === Backend Web Service (Django) ===
+  - type: web
+    name: familyflow-backend
+    env: python
+    buildCommand: "./build_backend.sh"
+    startCommand: "cd backend && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: familyflow-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: familyflow-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "*" # Should be changed in production
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "True"
+
+  # === Celery Worker ===
+  - type: worker
+    name: familyflow-celery
+    env: python
+    buildCommand: "./build_backend.sh"
+    startCommand: "cd backend && celery -A config worker -l info"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: familyflow-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: familyflow-redis
+          property: connectionString
+
+  # === Frontend Static Site (React/Vite) ===
+  - type: static-site
+    name: familyflow-frontend
+    buildCommand: "./build_frontend.sh"
+    publishPath: "frontend/dist"
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: "/index.html"
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: familyflow-backend
+          envVarKey: RENDER_EXTERNAL_URL
+
+  # === Redis (Celery Broker) ===
+  - type: redis
+    name: familyflow-redis
+    ipAllowList: []
+    plan: free
+
+databases:
+  # === PostgreSQL Database ===
+  - name: familyflow-db
+    databaseName: familyflow
+    user: familyflow_user
