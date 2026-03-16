@@ -9,5 +9,8 @@ export default defineConfig({
     proxy: {
       '/api': 'http://127.0.0.1:8000',
     }
+  },
+  preview: {
+    allowedHosts: ['family.avendano.site'],
   }
 })
