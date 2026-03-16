@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "yarn build && vite preview"
+    "start": "yarn build && vite preview --host 0.0.0.0 --port ${PORT:-10000}"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
