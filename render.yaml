@@ -52,10 +52,7 @@ services:
         destination: "/index.html"
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: familyflow-backend
-          envVarKey: RENDER_EXTERNAL_URL
+        value: "https://backend.avendano.site"
 
   # === Redis (Celery Broker) ===
   - type: redis
