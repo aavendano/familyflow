@@ -45,7 +45,7 @@ def list_tasks(request, family_id: int):
 
 @api.get("/families/{family_id}/activities/", response=List[ActivitySchema])
 def list_activities(request, family_id: int):
-    return Activity.objects.filter(family_id=family_id).order_by('-created_at')[:20]
+    return Activity.objects.select_related('actor').filter(family_id=family_id).order_by('-created_at')[:20]
 
 @api.get("/families/{family_id}/dashboard-summary/")
 def get_dashboard_summary(request, family_id: int):
@@ -57,7 +57,7 @@ def get_dashboard_summary(request, family_id: int):
     total_tasks = tasks.count()
     completed_tasks = tasks.filter(is_completed=True).count()
 
-    activities = Activity.objects.filter(family_id=family_id).order_by('-created_at')[:5]
+    activities = Activity.objects.select_related('actor').filter(family_id=family_id).order_by('-created_at')[:5]
 
     return {
         "next_event": {
