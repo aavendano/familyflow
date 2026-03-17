@@ -62,8 +62,8 @@ DATABASES = {
     }
 }
 
-if 'DATABASE_URL' in os.environ:
-    DATABASES['default'] = dj_database_url.config(conn_max_age=600)
+if 'DATABASE_CONNECTION_STRING' in os.environ:
+    DATABASES['default'] = dj_database_url.config(env='DATABASE_CONNECTION_STRING', conn_max_age=600)
 
 AUTH_PASSWORD_VALIDATORS = [
     {

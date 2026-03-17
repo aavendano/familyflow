@@ -6,7 +6,7 @@ services:
     buildCommand: "./build_backend.sh"
     startCommand: "cd backend && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
-      - key: DATABASE_URL
+      - key: DATABASE_CONNECTION_STRING
         fromDatabase:
           name: familyflow-db
           property: connectionString
@@ -31,7 +31,7 @@ services:
     buildCommand: "./build_backend.sh"
     startCommand: "cd backend && celery -A config worker -l info"
     envVars:
-      - key: DATABASE_URL
+      - key: DATABASE_CONNECTION_STRING
         fromDatabase:
           name: familyflow-db
           property: connectionString
@@ -63,5 +63,5 @@ services:
 databases:
   # === PostgreSQL Database ===
   - name: familyflow-db
-    databaseName: familyflow
+    databaseName: familyflow_db
     user: familyflow_user
