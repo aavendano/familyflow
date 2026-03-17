@@ -63,5 +63,5 @@ services:
 databases:
   # === PostgreSQL Database ===
   - name: familyflow-db
-    databaseName: familyflow
+    databaseName: familyflow_db
     user: familyflow_user
