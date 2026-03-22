@@ -22,7 +22,7 @@ export default function StitchHome({ setActiveTab }) {
     return <div className="flex justify-center items-center h-full">Loading...</div>;
   }
 
-  const { next_event, tasks, activities } = dashboard || {};
+  const { next_event, tasks, activities, groceries } = dashboard || {};
 
   return (
     <div className="relative flex h-full max-w-md w-full mx-auto flex-col bg-white overflow-hidden shadow-sm">
@@ -87,13 +87,15 @@ export default function StitchHome({ setActiveTab }) {
               <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: tasks?.total > 0 ? `${(tasks.completed/tasks.total)*100}%` : '0%' }}></div>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+          <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setActiveTab('groceries')}>
             <div className="flex items-center gap-2 text-orange-500 mb-1">
               <ShoppingCart size={18} />
               <span className="text-xs font-bold uppercase tracking-tight">Groceries</span>
             </div>
-            <p className="text-xl font-bold text-slate-900">Weekly Needs</p>
-            <p className="text-xs text-slate-500 mt-2">Tap to view list</p>
+            <p className="text-xl font-bold text-slate-900">{groceries?.purchased || 0} / {groceries?.total || 0}</p>
+            <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2">
+              <div className="bg-orange-500 h-full rounded-full transition-all duration-500" style={{ width: groceries?.total > 0 ? `${(groceries.purchased/groceries.total)*100}%` : '0%' }}></div>
+            </div>
           </div>
         </div>
 

@@ -1,0 +1,13 @@
+Watching for file changes with StatReloader
+[22/Mar/2026 16:39:36] "POST /api/families/1/groceries/ HTTP/1.1" 201 91
+[22/Mar/2026 16:39:46] "GET /api/families/1/dashboard-summary/ HTTP/1.1" 200 921
+[22/Mar/2026 16:39:48] "GET /api/families/1/groceries/ HTTP/1.1" 200 287
+[22/Mar/2026 16:39:49] "POST /api/families/1/groceries/ HTTP/1.1" 201 91
+[22/Mar/2026 16:39:49] "GET /api/families/1/groceries/ HTTP/1.1" 200 358
+[22/Mar/2026 16:40:03] "GET /api/families/1/dashboard-summary/ HTTP/1.1" 200 922
+[22/Mar/2026 16:40:05] "GET /api/families/1/groceries/ HTTP/1.1" 200 358
+[22/Mar/2026 16:40:06] "POST /api/families/1/groceries/ HTTP/1.1" 201 90
+[22/Mar/2026 16:40:06] "GET /api/families/1/groceries/ HTTP/1.1" 200 428
+[22/Mar/2026 16:40:08] "PUT /api/families/1/groceries/6 HTTP/1.1" 200 112
+[22/Mar/2026 16:40:09] "DELETE /api/families/1/groceries/6 HTTP/1.1" 200 48
+[22/Mar/2026 16:40:11] "GET /api/families/1/dashboard-summary/ HTTP/1.1" 200 931

@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
 from ninja import NinjaAPI, Schema
-from core.models import User, FamilyGroup, Event, TodoTask, Activity, TodoList, GroceryList
-from core.orchestration import create_event_flow, create_task_flow
+from core.models import User, FamilyGroup, Event, TodoTask, Activity, TodoList, GroceryList, GroceryItem
+from core.orchestration import create_event_flow, create_task_flow, create_grocery_item_flow, update_grocery_item_flow, delete_grocery_item_flow
 
 api = NinjaAPI(title="FamilyFlow API", version="1.0.0")
 
@@ -17,6 +17,22 @@ class EventSchema(Schema):
     end_time: datetime
     location: Optional[str] = None
     is_all_day: bool
+
+
+class GroceryItemSchema(Schema):
+    id: int
+    name: str
+    quantity: Optional[str] = None
+    is_purchased: bool
+
+class GroceryItemCreateSchema(Schema):
+    name: str
+    quantity: Optional[str] = None
+
+class GroceryItemUpdateSchema(Schema):
+    name: Optional[str] = None
+    quantity: Optional[str] = None
+    is_purchased: Optional[bool] = None
 
 class TaskSchema(Schema):
     id: int
@@ -57,6 +73,10 @@ def get_dashboard_summary(request, family_id: int):
     total_tasks = tasks.count()
     completed_tasks = tasks.filter(is_completed=True).count()
 
+
+    groceries = GroceryItem.objects.filter(list__family_id=family_id)
+    total_groceries = groceries.count()
+    completed_groceries = groceries.filter(is_purchased=True).count()
     activities = Activity.objects.select_related('actor').filter(family_id=family_id).order_by('-created_at')[:5]
 
     return {
@@ -66,7 +86,13 @@ def get_dashboard_summary(request, family_id: int):
             "start_time": next_event.start_time,
             "location": next_event.location
         } if next_event else None,
+
+        "groceries": {
+            "total": total_groceries,
+            "purchased": completed_groceries
+        },
         "tasks": {
+
             "total": total_tasks,
             "completed": completed_tasks
         },
@@ -80,6 +106,56 @@ def get_dashboard_summary(request, family_id: int):
             } for a in activities
         ]
     }
+
+
+@api.get("/families/{family_id}/groceries/", response=List[GroceryItemSchema])
+def list_groceries(request, family_id: int):
+    # Retrieve default grocery list
+    grocery_list = GroceryList.objects.filter(family_id=family_id).first()
+    if not grocery_list:
+        return []
+    return GroceryItem.objects.filter(list_id=grocery_list.id).order_by('is_purchased', '-created_at')
+
+@api.post("/families/{family_id}/groceries/", response={201: dict, 400: ErrorResponse})
+def create_grocery_item(request, family_id: int, payload: GroceryItemCreateSchema):
+    actor_id = request.user.id if request.user.is_authenticated else 1
+
+    # Ensure grocery list exists
+    grocery_list, created = GroceryList.objects.get_or_create(family_id=family_id, defaults={'name': 'Main List'})
+
+    item_data = payload.dict()
+    outcome = create_grocery_item_flow(family_id, actor_id, item_data)
+
+    if outcome.status == 'SUCCESS':
+        return 201, {"message": "Grocery item created successfully", "item": outcome.context.data.result}
+    else:
+        return 400, {"message": f"Grocery item creation failed"}
+
+@api.put("/families/{family_id}/groceries/{item_id}", response={200: dict, 400: ErrorResponse, 404: ErrorResponse})
+def update_grocery_item(request, family_id: int, item_id: int, payload: GroceryItemUpdateSchema):
+    actor_id = request.user.id if request.user.is_authenticated else 1
+
+    update_data = payload.dict(exclude_unset=True)
+    if not update_data:
+         return 400, {"message": "No data provided for update"}
+
+    outcome = update_grocery_item_flow(family_id, actor_id, item_id, update_data)
+
+    if outcome.status == 'SUCCESS':
+        return 200, {"message": "Grocery item updated successfully", "item": outcome.context.data.result}
+    else:
+        return 400, {"message": f"Grocery item update failed"}
+
+@api.delete("/families/{family_id}/groceries/{item_id}", response={200: dict, 400: ErrorResponse, 404: ErrorResponse})
+def delete_grocery_item(request, family_id: int, item_id: int):
+    actor_id = request.user.id if request.user.is_authenticated else 1
+
+    outcome = delete_grocery_item_flow(family_id, actor_id, item_id)
+
+    if outcome.status == 'SUCCESS':
+        return 200, {"message": "Grocery item deleted successfully"}
+    else:
+        return 400, {"message": f"Grocery item deletion failed"}
 
 class EventCreateSchema(Schema):
     title: str
@@ -104,8 +180,8 @@ def create_event(request, family_id: int, payload: EventCreateSchema):
     event_data = payload.dict()
     outcome = create_event_flow(family_id, actor_id, event_data)
 
-    if outcome.success:
-        return 201, {"message": "Event created successfully", "event": outcome.context.result}
+    if outcome.status == 'SUCCESS':
+        return 201, {"message": "Event created successfully", "event": outcome.context.data.result}
     else:
         return 400, {"message": f"Event creation failed"}
 
@@ -116,7 +192,7 @@ def create_task(request, family_id: int, payload: TaskCreateSchema):
     task_data = payload.dict()
     outcome = create_task_flow(family_id, actor_id, task_data)
 
-    if outcome.success:
-        return 201, {"message": "Task created successfully", "task": outcome.context.result}
+    if outcome.status == 'SUCCESS':
+        return 201, {"message": "Task created successfully", "task": outcome.context.data.result}
     else:
         return 400, {"message": f"Task creation failed"}
