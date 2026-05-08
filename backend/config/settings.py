@@ -1,12 +1,25 @@
 from pathlib import Path
 import os
 import dj_database_url
+from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-z=b^9t2+!q&k)t!1p5n_!0p4x_4^f!9j$m0^w_k=z&^p=j-k=z')
+# Load environment variables from .env file
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        # Fallback for local development
+        SECRET_KEY = 'django-insecure-local-dev-key'
+    else:
+        # Require SECRET_KEY in production
+        raise ImproperlyConfigured("The SECRET_KEY setting must not be empty in production.")
+
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
