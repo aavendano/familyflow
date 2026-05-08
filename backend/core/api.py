@@ -116,9 +116,11 @@ def list_groceries(request, family_id: int):
         return []
     return GroceryItem.objects.filter(list_id=grocery_list.id).order_by('is_purchased', '-created_at')
 
-@api.post("/families/{family_id}/groceries/", response={201: dict, 400: ErrorResponse})
+@api.post("/families/{family_id}/groceries/", response={201: dict, 400: ErrorResponse, 401: ErrorResponse})
 def create_grocery_item(request, family_id: int, payload: GroceryItemCreateSchema):
-    actor_id = request.user.id if request.user.is_authenticated else 1
+    if not request.user.is_authenticated:
+        return 401, {"message": "Unauthorized"}
+    actor_id = request.user.id
 
     # Ensure grocery list exists
     grocery_list, created = GroceryList.objects.get_or_create(family_id=family_id, defaults={'name': 'Main List'})
@@ -131,9 +133,11 @@ def create_grocery_item(request, family_id: int, payload: GroceryItemCreateSchem
     else:
         return 400, {"message": f"Grocery item creation failed"}
 
-@api.put("/families/{family_id}/groceries/{item_id}", response={200: dict, 400: ErrorResponse, 404: ErrorResponse})
+@api.put("/families/{family_id}/groceries/{item_id}", response={200: dict, 400: ErrorResponse, 404: ErrorResponse, 401: ErrorResponse})
 def update_grocery_item(request, family_id: int, item_id: int, payload: GroceryItemUpdateSchema):
-    actor_id = request.user.id if request.user.is_authenticated else 1
+    if not request.user.is_authenticated:
+        return 401, {"message": "Unauthorized"}
+    actor_id = request.user.id
 
     update_data = payload.dict(exclude_unset=True)
     if not update_data:
@@ -146,9 +150,11 @@ def update_grocery_item(request, family_id: int, item_id: int, payload: GroceryI
     else:
         return 400, {"message": f"Grocery item update failed"}
 
-@api.delete("/families/{family_id}/groceries/{item_id}", response={200: dict, 400: ErrorResponse, 404: ErrorResponse})
+@api.delete("/families/{family_id}/groceries/{item_id}", response={200: dict, 400: ErrorResponse, 404: ErrorResponse, 401: ErrorResponse})
 def delete_grocery_item(request, family_id: int, item_id: int):
-    actor_id = request.user.id if request.user.is_authenticated else 1
+    if not request.user.is_authenticated:
+        return 401, {"message": "Unauthorized"}
+    actor_id = request.user.id
 
     outcome = delete_grocery_item_flow(family_id, actor_id, item_id)
 
@@ -172,10 +178,11 @@ class TaskCreateSchema(Schema):
     due_date: Optional[datetime] = None
     assignee_id: Optional[int] = None
 
-@api.post("/families/{family_id}/events/", response={201: dict, 400: ErrorResponse})
+@api.post("/families/{family_id}/events/", response={201: dict, 400: ErrorResponse, 401: ErrorResponse})
 def create_event(request, family_id: int, payload: EventCreateSchema):
-    # Retrieve default user for now (e.g., John Smith seeded with ID 1)
-    actor_id = request.user.id if request.user.is_authenticated else 1
+    if not request.user.is_authenticated:
+        return 401, {"message": "Unauthorized"}
+    actor_id = request.user.id
 
     event_data = payload.dict()
     outcome = create_event_flow(family_id, actor_id, event_data)
@@ -185,9 +192,11 @@ def create_event(request, family_id: int, payload: EventCreateSchema):
     else:
         return 400, {"message": f"Event creation failed"}
 
-@api.post("/families/{family_id}/tasks/", response={201: dict, 400: ErrorResponse})
+@api.post("/families/{family_id}/tasks/", response={201: dict, 400: ErrorResponse, 401: ErrorResponse})
 def create_task(request, family_id: int, payload: TaskCreateSchema):
-    actor_id = request.user.id if request.user.is_authenticated else 1
+    if not request.user.is_authenticated:
+        return 401, {"message": "Unauthorized"}
+    actor_id = request.user.id
 
     task_data = payload.dict()
     outcome = create_task_flow(family_id, actor_id, task_data)
