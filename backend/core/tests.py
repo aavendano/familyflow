@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.utils import timezone
 from datetime import timedelta
-from core.models import User, FamilyGroup, Event
+from core.models import User, FamilyGroup, Event, Activity
 
 class EventAPITests(TestCase):
     def setUp(self):
@@ -65,6 +65,69 @@ class EventAPITests(TestCase):
         """Test that an empty list is returned if no events exist for the family."""
         family3 = FamilyGroup.objects.create(name="Family 3")
         response = self.client.get(f"/api/families/{family3.id}/events/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data, [])
+
+class ActivityAPITests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.family1 = FamilyGroup.objects.create(name="Family 1")
+        self.family2 = FamilyGroup.objects.create(name="Family 2")
+        self.user = User.objects.create_user(username="testuser2", password="password")
+
+        # Create 25 activities for family1 to test limit
+        for i in range(25):
+            Activity.objects.create(
+                family=self.family1,
+                actor=self.user,
+                action=f"Action {i}",
+                entity_type="Task"
+            )
+
+        # Create activity for family2
+        self.family2_activity = Activity.objects.create(
+            family=self.family2,
+            actor=self.user,
+            action="Family 2 Action",
+            entity_type="Event"
+        )
+
+    def test_list_activities_success(self):
+        """Test retrieving activities for a specific family, ensuring results are filtered and limited."""
+        response = self.client.get(f"/api/families/{self.family1.id}/activities/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        # Should be limited to 20, even though 25 were created
+        self.assertEqual(len(data), 20)
+
+    def test_list_activities_ordering(self):
+        """Test that activities are returned in descending order of created_at."""
+        Activity.objects.filter(family=self.family1).delete()
+        a1 = Activity.objects.create(family=self.family1, actor=self.user, action="Old", entity_type="T")
+        a2 = Activity.objects.create(family=self.family1, actor=self.user, action="New", entity_type="T")
+
+        # Manually update created_at to ensure ordering
+        Activity.objects.filter(id=a1.id).update(created_at=timezone.now() - timedelta(days=1))
+        Activity.objects.filter(id=a2.id).update(created_at=timezone.now())
+
+        response = self.client.get(f"/api/families/{self.family1.id}/activities/")
+        data = response.json()
+        self.assertEqual(data[0]["action"], "New")
+        self.assertEqual(data[1]["action"], "Old")
+
+    def test_list_activities_filtering(self):
+        """Test that only the requested family's activities are returned."""
+        response = self.client.get(f"/api/families/{self.family2.id}/activities/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["action"], "Family 2 Action")
+
+    def test_list_activities_empty(self):
+        """Test that an empty list is returned if no activities exist for the family."""
+        family3 = FamilyGroup.objects.create(name="Family 3")
+        response = self.client.get(f"/api/families/{family3.id}/activities/")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data, [])
